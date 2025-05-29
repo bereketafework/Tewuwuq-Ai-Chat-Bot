@@ -1,8 +1,9 @@
 
 'use client';
 
+import React from 'react'; // Added React import
 import { Button } from '@/components/ui/button';
-import { Eraser, SearchCheck, Trash2 } from 'lucide-react'; // Changed Eraser to Trash2
+import { SearchCheck, Trash2 } from 'lucide-react'; 
 import {
   AlertDialog,
   AlertDialogAction,
@@ -123,22 +124,22 @@ export function ChatHistoryControls({ onClearHistory, activeSessionId }: ChatHis
             className="text-muted-foreground hover:text-destructive px-2 sm:px-3"
             disabled={!activeSessionId} // Disable if no active session
           >
-            <Trash2 className="mr-1 sm:mr-2 h-4 w-4" /> {/* Changed icon */}
-            <span className="hidden sm:inline">Delete Session</span> {/* Changed text */}
-            <span className="sm:hidden">Delete</span> {/* Changed text */}
+            <Trash2 className="mr-1 sm:mr-2 h-4 w-4" /> 
+            <span className="hidden sm:inline">Delete Session</span> 
+            <span className="sm:hidden">Delete</span> 
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this chat session?</AlertDialogTitle> {/* Changed title */}
+            <AlertDialogTitle>Delete this chat session?</AlertDialogTitle> 
             <AlertDialogDescription>
               This action will permanently delete the current chat session and all its messages. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => {/* Resets any component-local state if needed */}}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={onClearHistory} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
-              Delete Session {/* Changed action text */}
+              Delete Session 
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
