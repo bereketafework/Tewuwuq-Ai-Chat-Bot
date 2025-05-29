@@ -42,6 +42,8 @@ export function ChatHistoryControls({ onClearHistory, activeSessionId }: ChatHis
   const handleAnalyzeSession = useCallback(async () => {
     if (!activeSessionId) return;
     setAnalysisResult(null); // Clear previous result before new analysis
+    // analysisOpen is managed by Dialog's onOpenChange, so we don't need to set it true here.
+    // The DialogTrigger already handles opening.
     const result = await performSessionAnalysis(activeSessionId);
     setAnalysisResult(result);
   }, [activeSessionId, performSessionAnalysis]);
@@ -72,12 +74,13 @@ export function ChatHistoryControls({ onClearHistory, activeSessionId }: ChatHis
             size="sm"
             className="text-muted-foreground hover:text-foreground px-2 sm:px-3"
             onClick={() => {
+              // setAnalysisOpen(true); // DialogTrigger handles this
               handleAnalyzeSession(); 
             }}
             disabled={!activeSessionId || isAnalyzingSession}
           >
             <SearchCheck className="mr-1 sm:mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">{isAnalyzingSession ? 'Analyzing...' : 'Analyze Chat'}</span>
+            <span className="hidden sm:inline">{isAnalyzingSession && !analysisResult ? 'Analyzing...' : 'Analyze Chat'}</span>
             <span className="sm:hidden">Analyze</span>
           </Button>
         </DialogTrigger>
@@ -88,7 +91,7 @@ export function ChatHistoryControls({ onClearHistory, activeSessionId }: ChatHis
               A deep analysis of the current chat session.
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="flex-grow py-2 pr-2 min-h-[200px] border rounded-md bg-muted/50">
+          <ScrollArea className="flex-grow min-h-[200px] border rounded-md bg-muted/50">
             {isAnalyzingSession && !analysisResult && (
               <div className="space-y-3 p-4">
                 <Skeleton className="h-5 w-3/4" />
@@ -100,11 +103,11 @@ export function ChatHistoryControls({ onClearHistory, activeSessionId }: ChatHis
               </div>
             )}
             {!isAnalyzingSession && analysisResult && (
-              <div className="text-sm whitespace-pre-wrap p-4">{renderTextWithFormatting(analysisResult)}</div>
+              <div className="text-sm whitespace-pre-wrap p-4 break-words">{renderTextWithFormatting(analysisResult)}</div>
             )}
             {!isAnalyzingSession && !analysisResult && (
               <p className="text-sm text-muted-foreground p-4 text-center">
-                {activeSessionId ? "No analysis available or an error occurred." : "Please select a session to analyze."}
+                {activeSessionId ? "Click 'Analyze Chat' to start or an error occurred." : "Please select a session to analyze."}
               </p>
             )}
           </ScrollArea>
