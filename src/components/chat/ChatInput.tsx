@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { AnalyzeTextAndFileInput } from '@/ai/flows/analyze-file-and-chat';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils'; // Added this import
 
 interface ChatInputProps {
   onSendMessage: (
