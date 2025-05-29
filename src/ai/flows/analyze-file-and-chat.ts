@@ -76,7 +76,11 @@ It is CRUCIAL to ALWAYS explicitly state in Amharic that your information is NOT
 A file ({{currentFile.mimeType}}) has been uploaded by the user.
 File content: {{media url=currentFile.dataUri}}
 First, summarize the key information or describe the visual elements of this file in Amharic.
-Then, considering this file and the user's message "{{{currentMessageText}}}", provide your comprehensive medical Amharic response.
+{{#if currentMessageText}}
+Then, considering this file AND the user's message "{{{currentMessageText}}}", provide your comprehensive medical Amharic response.
+{{else}}
+Then, based SOLELY on the content of this file, provide your comprehensive medical Amharic analysis and response.
+{{/if}}
 {{else}}
 The user's current query is: "{{{currentMessageText}}}"
 Provide your comprehensive medical Amharic response to this query.
@@ -93,7 +97,11 @@ Structure your response clearly. Use Markdown for bolding titles or important ph
 A file ({{currentFile.mimeType}}) has been uploaded by the user.
 File content: {{media url=currentFile.dataUri}}
 First, summarize the key information or describe the visual elements of this file in Amharic.
-Then, considering this file and the user's message "{{{currentMessageText}}}", provide your comprehensive Amharic response.
+{{#if currentMessageText}}
+Then, considering this file AND the user's message "{{{currentMessageText}}}", provide your comprehensive Amharic response.
+{{else}}
+Then, based SOLELY on the content of this file, provide your comprehensive Amharic analysis and response.
+{{/if}}
 {{else}}
 The user's current query is: "{{{currentMessageText}}}"
 Provide your comprehensive Amharic response to this query.
