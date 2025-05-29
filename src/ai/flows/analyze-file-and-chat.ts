@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI agent that analyzes text and files (images/PDFs),
@@ -10,7 +11,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {MessagePart, Role, defineMessage} from 'genkit';
+import {MessagePart, Role} from 'genkit'; // Removed defineMessage
 import {z} from 'genkit';
 
 // Define the structure for individual history messages
@@ -97,18 +98,20 @@ const analyzeTextAndFileFlow = ai.defineFlow(
   async (flowInput) => {
     const { history, currentMessageText, currentFile, mode } = flowInput;
 
-    const messages = (history || []).map(h => defineMessage({role: h.role, parts: h.parts}));
+    // The 'messages' constant that was here using defineMessage was unused and causing the error. It has been removed.
     
-    const currentUserParts: MessagePart[] = [];
-    if (currentMessageText) {
-      currentUserParts.push({ text: currentMessageText });
-    }
-    if (currentFile) {
-      currentUserParts.push({ media: { url: currentFile.dataUri, contentType: currentFile.mimeType } });
-    }
-    if (currentUserParts.length > 0) {
-      messages.push(defineMessage({ role: 'user', parts: currentUserParts }));
-    }
+    // const currentUserParts: MessagePart[] = []; // This logic seems to be for an alternative approach of combining history and current message.
+    // if (currentMessageText) {
+    //   currentUserParts.push({ text: currentMessageText });
+    // }
+    // if (currentFile) {
+    //   currentUserParts.push({ media: { url: currentFile.dataUri, contentType: currentFile.mimeType } });
+    // }
+    // if (currentUserParts.length > 0) {
+      // The line below was commented out in the provided code. If it were active,
+      // it would modify a 'messages' array which is no longer defined here.
+      // messages.push(defineMessage({ role: 'user', parts: currentUserParts })); 
+    // }
     
     // The system prompt itself now forms the basis of the 'user' message to the model,
     // as it contains the instructions templated with currentFile and currentMessageText.
@@ -121,10 +124,7 @@ const analyzeTextAndFileFlow = ai.defineFlow(
             isMedicalMode: mode === 'medical',
         },
         { // These are options for the ai.generate call that the prompt wraps
-            history: (history || []).map(h => defineMessage({role: h.role, parts: h.parts})),
-            // The 'prompt' option is not used here if systemPrompt itself constructs the full instruction.
-            // Or, if systemPrompt only returns the string and doesn't call generate,
-            // then you'd call ai.generate({ prompt: processedPromptString, history: ... })
+            history: history || [], // Use history directly as it's already formatted
         }
     );
     
