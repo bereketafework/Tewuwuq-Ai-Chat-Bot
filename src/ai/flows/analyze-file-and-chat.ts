@@ -3,7 +3,7 @@
 /**
  * @fileOverview An AI agent that analyzes text and files (images/PDFs),
  * considers chat history, and responds in Amharic with reasoning,
- * supporting general and medical modes.
+ * supporting general, medical, child, and student modes.
  *
  * - analyzeTextAndFile - The main function for AI interaction.
  * - AnalyzeTextAndFileInput - Input type.
@@ -26,11 +26,11 @@ const HistoryMessageSchema = z.object({
       }).optional(),
     }).transform(p => {
       const part: MessagePart = {};
-      if (p.text !== undefined && p.text !== null) part.text = p.text; // Ensure text is not undefined before assigning
+      if (p.text !== undefined && p.text !== null) part.text = p.text;
       if (p.media) part.media = { url: p.media.url, contentType: p.media.contentType };
       return part;
     })
-  ).min(1), // Ensure parts array is not empty if provided
+  ).min(1),
 });
 
 const AnalyzeTextAndFileInputSchema = z.object({
@@ -43,13 +43,13 @@ const AnalyzeTextAndFileInputSchema = z.object({
     })
     .optional()
     .describe('An optional file (image or PDF) uploaded by the user.'),
-  mode: z.enum(['general', 'medical']).default('general').describe('The mode of operation: "general" or "medical".'),
+  mode: z.enum(['general', 'medical', 'child', 'student']).default('general').describe('The mode of operation: "general", "medical", "child", or "student".'),
 });
 export type AnalyzeTextAndFileInput = z.infer<typeof AnalyzeTextAndFileInputSchema>;
 
 const AnalyzeTextAndFileOutputSchema = z.object({
   amharicResponse: z.string().describe('The AI response in Amharic, potentially structured with Markdown.'),
-  reasoning: z.string().optional().describe('The reasoning process behind the AI response, in Amharic. Provided in both modes, starting with "ምክንያታዊነት:".'),
+  reasoning: z.string().optional().describe('The reasoning process behind the AI response, in Amharic. Provided in all modes, with appropriate prefix.'),
 });
 export type AnalyzeTextAndFileOutput = z.infer<typeof AnalyzeTextAndFileOutputSchema>;
 
@@ -60,10 +60,12 @@ export async function analyzeTextAndFile(input: AnalyzeTextAndFileInput): Promis
 const systemPrompt = ai.definePrompt({
   name: 'analyzeTextAndFilePrompt',
   input: { schema: z.object({
-    // Directly use the optional types from the main input schema
     currentMessageText: AnalyzeTextAndFileInputSchema.shape.currentMessageText,
     currentFile: AnalyzeTextAndFileInputSchema.shape.currentFile,
     isMedicalMode: z.boolean(),
+    isChildMode: z.boolean(),
+    isStudentMode: z.boolean(),
+    isGeneralMode: z.boolean(),
   })},
   output: { schema: AnalyzeTextAndFileOutputSchema },
   prompt: `{{#if isMedicalMode}}
@@ -93,7 +95,62 @@ You are in medical mode. Please provide a general medical greeting or ask how yo
 
 Finally, provide your reasoning as a separate thought process. This reasoning should be in Amharic and start with the label "ምክንያታዊነት:" (Reasoning:). This reasoning should be part of the 'reasoning' output field.
 
+{{else if isChildMode}}
+You are a friendly, patient, and engaging AI playmate and teacher for CHILDREN (typically under 13 years old), fluent in Amharic.
+Your primary goal is to explain things in a way that is fun, simple, and easy for a child to understand.
+Use simple Amharic words, short sentences, and relatable analogies or stories. Avoid complex jargon.
+Be encouraging and positive in your tone.
+If the topic seems like it could be about health or the body, be extra careful: explain very simply, and ALWAYS strongly advise them to talk to their parents, a trusted adult, or a doctor if they have questions or don't feel well. For example, "If your tummy hurts, it's best to tell your mom, dad, or a doctor so they can help you feel better!" This is very important advice.
+Structure your response clearly. You can use simple Markdown like **bold** for titles if it helps.
+
+{{#if currentFile}}
+A file ({{currentFile.mimeType}}) has been uploaded by the user.
+File content: {{media url=currentFile.dataUri}}
+First, in very simple Amharic terms a child can understand, describe what you see in this file or what it's about. Make it sound interesting! For example, if it's a picture of a cat, you could say "Wow, what a cute kittycat!".
+{{#if currentMessageText}}
+Then, considering this file AND the user's message "{{{currentMessageText}}}", provide your child-friendly Amharic response.
 {{else}}
+Then, based SOLELY on the content of this file, provide your child-friendly Amharic analysis and response.
+{{/if}}
+{{else}}
+{{#if currentMessageText}}
+The user's current query is: "{{{currentMessageText}}}"
+Provide your child-friendly Amharic response to this query.
+{{else}}
+You are in child mode. Please provide a friendly Amharic greeting suitable for a child, perhaps ask them what they want to learn or talk about today! (e.g., "ሰላም የኔ ቆንጆ! ዛሬ ምን እንማማር ወይስ ምን እናውራ?")
+{{/if}}
+{{/if}}
+
+Finally, explain your thinking very simply, in Amharic, starting with "እንዴት እንዳሰብኩት ላሳይህ/ሽ:" (Let me show you how I thought about it:). This reasoning should be part of the 'reasoning' output field.
+
+{{else if isStudentMode}}
+You are a knowledgeable and insightful AI tutor and assistant for HIGH SCHOOL STUDENTS (typically ages 14-18), fluent in Amharic.
+Your goal is to provide comprehensive, accurate, and engaging answers that help students learn, understand topics more deeply, and satisfy their curiosity.
+Use clear and precise Amharic. Explain concepts thoroughly. Provide relevant examples, and if possible, connect topics to concepts students might be learning in school (e.g., biology, physics, history, literature) or to real-world applications.
+If the topic is medical or health-related, provide detailed and accurate information, but ALWAYS include a disclaimer that this is not professional medical advice and they should consult a healthcare provider for personal health concerns. You can reference the importance of evidence-based sources like https://www.uptodate.com/.
+Structure your response clearly. Use Markdown for bolding titles, subheadings, or important terms (e.g., **ዋና ፅንሰ-ሀሳብ:**). Bullet points or numbered lists can be used for clarity.
+
+{{#if currentFile}}
+A file ({{currentFile.mimeType}}) has been uploaded by the user.
+File content: {{media url=currentFile.dataUri}}
+First, provide a concise summary or analysis of the key information or visual elements of this file in Amharic, suitable for a high school student.
+{{#if currentMessageText}}
+Then, considering this file AND the user's message "{{{currentMessageText}}}", provide your comprehensive Amharic response, aiming to educate and inform.
+{{else}}
+Then, based SOLELY on the content of this file, provide your comprehensive Amharic analysis and response for a student.
+{{/if}}
+{{else}}
+{{#if currentMessageText}}
+The user's current query is: "{{{currentMessageText}}}"
+Provide your comprehensive and educational Amharic response to this query.
+{{else}}
+You are in student mode. Please provide an engaging Amharic greeting suitable for a high school student, perhaps inviting them to ask a question or explore a topic. (e.g., "ሰላም! ለዛሬው ትምህርት ዝግጁ ነህ/ነሽ? የትኛውን ርዕስ መመርመር እንችላለን?")
+{{/if}}
+{{/if}}
+
+Finally, provide your reasoning or thinking process as a separate section. This reasoning should be in Amharic and start with the label "ምክንያታዊነት:" (Reasoning:). This reasoning should be part of the 'reasoning' output field.
+
+{{else}} 
 You are a helpful AI assistant fluent in Amharic. Your knowledge should be comprehensive and up-to-date.
 Analyze any provided text and/or files (images, PDFs).
 Structure your response clearly. Use Markdown for bolding titles or important phrases (e.g., **ዋና ርዕስ:**).
@@ -129,18 +186,26 @@ const analyzeTextAndFileFlow = ai.defineFlow(
   async (flowInput) => {
     const { history, currentMessageText, currentFile, mode } = flowInput;
     
-    // Ensure history parts are compliant, especially if a part could be empty (e.g. only media)
     const compliantHistory = (history || []).map(h => ({
         ...h,
         parts: h.parts.filter(p => (p.text !== undefined && p.text !== null) || p.media !== undefined)
     })).filter(h => h.parts.length > 0);
 
+    const isMedicalMode = mode === 'medical';
+    const isChildMode = mode === 'child';
+    const isStudentMode = mode === 'student';
+    // Default to general mode if no other specific mode matches
+    const isGeneralMode = mode === 'general' || (!isMedicalMode && !isChildMode && !isStudentMode);
+
 
     const {output} = await systemPrompt(
         { 
-            currentMessageText: currentMessageText, // Pass directly, Zod schema handles optionality
+            currentMessageText: currentMessageText,
             currentFile: currentFile,
-            isMedicalMode: mode === 'medical',
+            isMedicalMode,
+            isChildMode,
+            isStudentMode,
+            isGeneralMode,
         },
         { 
             history: compliantHistory, 

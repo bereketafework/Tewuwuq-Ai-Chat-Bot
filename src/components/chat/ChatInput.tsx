@@ -83,13 +83,27 @@ export function ChatInput({ onSendMessage, isLoading, currentMode, onModeChange 
     }
   };
 
+  const getPlaceholderText = () => {
+    switch(currentMode) {
+      case 'medical':
+        return "Ask medical questions...";
+      case 'child':
+        return "Ask fun questions or what you want to learn...";
+      case 'student':
+        return "Explore topics or ask for explanations...";
+      case 'general':
+      default:
+        return "Type message or attach file...";
+    }
+  };
+
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-2 p-3 border-t bg-background sticky bottom-0 shadow-sm" // Use theme bg, add shadow
+      className="flex flex-col gap-2 p-3 border-t bg-background sticky bottom-0 shadow-sm"
     >
       {selectedFile && (
-        <div className="flex items-center justify-between p-2 text-sm bg-card rounded-lg border"> {/* Use card bg */}
+        <div className="flex items-center justify-between p-2 text-sm bg-card rounded-lg border">
           <span className="truncate text-muted-foreground flex items-center">
             <Paperclip className="inline h-4 w-4 mr-2 text-primary" /> {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
           </span>
@@ -108,7 +122,7 @@ export function ChatInput({ onSendMessage, isLoading, currentMode, onModeChange 
             name="chat-mode-select"
           >
             <SelectTrigger 
-              className="w-auto min-w-[110px] sm:min-w-[120px] bg-card focus-visible:ring-primary h-10 text-sm" // Use card bg, primary ring
+              className="w-auto min-w-[110px] sm:min-w-[120px] bg-card focus-visible:ring-primary h-10 text-sm"
               aria-label="Select chat mode"
               id="chat-mode-select"
             >
@@ -117,6 +131,8 @@ export function ChatInput({ onSendMessage, isLoading, currentMode, onModeChange 
             <SelectContent className="bg-popover text-popover-foreground">
               <SelectItem value="general">General</SelectItem>
               <SelectItem value="medical">Medical</SelectItem>
+              <SelectItem value="child">Child</SelectItem>
+              <SelectItem value="student">Student</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -124,15 +140,15 @@ export function ChatInput({ onSendMessage, isLoading, currentMode, onModeChange 
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          placeholder={currentMode === 'medical' ? "Ask medical questions..." : "Type message or attach file..."}
-          className="flex-grow bg-card focus-visible:ring-primary min-w-[100px] text-sm h-10" // Use card bg, primary ring
+          placeholder={getPlaceholderText()}
+          className="flex-grow bg-card focus-visible:ring-primary min-w-[100px] text-sm h-10"
           disabled={isLoading}
           aria-label="Chat message input"
         />
         <Button 
           type="button" 
           size="icon" 
-          variant="outline" // More subtle for attach
+          variant="outline"
           className="text-primary border-primary hover:bg-primary/10 flex-shrink-0 h-10 w-10" 
           onClick={() => fileInputRef.current?.click()}
           disabled={isLoading}
