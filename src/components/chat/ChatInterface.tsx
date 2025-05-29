@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -8,6 +9,7 @@ import { ChatHistoryControls } from './ChatHistoryControls';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
+import { Bot } from 'lucide-react'; // Added import for Bot icon
 
 export function ChatInterface() {
   const { messages, isLoadingAI, sendMessage, clearHistory } = useChat();
