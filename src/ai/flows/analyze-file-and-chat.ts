@@ -26,11 +26,11 @@ const HistoryMessageSchema = z.object({
       }).optional(),
     }).transform(p => {
       const part: MessagePart = {};
-      if (p.text) part.text = p.text;
+      if (p.text !== undefined && p.text !== null) part.text = p.text; // Ensure text is not undefined before assigning
       if (p.media) part.media = { url: p.media.url, contentType: p.media.contentType };
       return part;
     })
-  ),
+  ).min(1), // Ensure parts array is not empty if provided
 });
 
 const AnalyzeTextAndFileInputSchema = z.object({
@@ -60,6 +60,7 @@ export async function analyzeTextAndFile(input: AnalyzeTextAndFileInput): Promis
 const systemPrompt = ai.definePrompt({
   name: 'analyzeTextAndFilePrompt',
   input: { schema: z.object({
+    // Directly use the optional types from the main input schema
     currentMessageText: AnalyzeTextAndFileInputSchema.shape.currentMessageText,
     currentFile: AnalyzeTextAndFileInputSchema.shape.currentFile,
     isMedicalMode: z.boolean(),
@@ -82,8 +83,12 @@ Then, considering this file AND the user's message "{{{currentMessageText}}}", p
 Then, based SOLELY on the content of this file, provide your comprehensive medical Amharic analysis and response.
 {{/if}}
 {{else}}
+{{#if currentMessageText}}
 The user's current query is: "{{{currentMessageText}}}"
 Provide your comprehensive medical Amharic response to this query.
+{{else}}
+You are in medical mode. Please provide a general medical greeting or ask how you can help with a medical question in Amharic.
+{{/if}}
 {{/if}}
 
 Finally, provide your reasoning as a separate thought process. This reasoning should be in Amharic and start with the label "ምክንያታዊነት:" (Reasoning:). This reasoning should be part of the 'reasoning' output field.
@@ -103,8 +108,12 @@ Then, considering this file AND the user's message "{{{currentMessageText}}}", p
 Then, based SOLELY on the content of this file, provide your comprehensive Amharic analysis and response.
 {{/if}}
 {{else}}
+{{#if currentMessageText}}
 The user's current query is: "{{{currentMessageText}}}"
 Provide your comprehensive Amharic response to this query.
+{{else}}
+You are in general mode. Please provide a general greeting or ask how you can help in Amharic.
+{{/if}}
 {{/if}}
 
 Finally, provide your reasoning or thinking process as a separate section. This reasoning should be in Amharic and start with the label "ምክንያታዊነት:" (Reasoning:). This reasoning should be part of the 'reasoning' output field.
@@ -120,14 +129,21 @@ const analyzeTextAndFileFlow = ai.defineFlow(
   async (flowInput) => {
     const { history, currentMessageText, currentFile, mode } = flowInput;
     
+    // Ensure history parts are compliant, especially if a part could be empty (e.g. only media)
+    const compliantHistory = (history || []).map(h => ({
+        ...h,
+        parts: h.parts.filter(p => (p.text !== undefined && p.text !== null) || p.media !== undefined)
+    })).filter(h => h.parts.length > 0);
+
+
     const {output} = await systemPrompt(
         { 
-            currentMessageText: currentMessageText || "",
+            currentMessageText: currentMessageText, // Pass directly, Zod schema handles optionality
             currentFile: currentFile,
             isMedicalMode: mode === 'medical',
         },
         { 
-            history: history || [], 
+            history: compliantHistory, 
         }
     );
     
@@ -137,4 +153,3 @@ const analyzeTextAndFileFlow = ai.defineFlow(
     return output;
   }
 );
-

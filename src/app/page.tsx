@@ -20,22 +20,22 @@ export default function Home() {
     selectSession, 
     deleteSession,
     clearActiveSessionHistory,
-    isAnalyzingSession, // Added from useChat
+    isAnalyzingSession,
   } = useChat();
 
   const activeSessionTitle = activeSessionId ? (sessions.find(s => s.id === activeSessionId)?.title || "Chat") : "ትውውቅ (Tewuwuq)";
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex h-screen max-h-screen bg-background text-foreground overflow-hidden relative"> {/* Added relative for overlay */}
+      <div className="flex h-screen max-h-screen bg-background text-foreground overflow-hidden relative">
         {isAnalyzingSession && (
-          <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex flex-col items-center justify-center z-50 text-center p-4">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-50 text-center p-4 transition-opacity duration-300 ease-in-out">
               <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
               <p className="text-xl font-semibold text-foreground">Analyzing Session...</p>
               <p className="text-sm text-muted-foreground">Please wait while the AI processes the chat history.</p>
           </div>
         )}
-        <Sidebar side="left" collapsible="icon" className="border-r border-border bg-card">
+        <Sidebar side="left" collapsible="icon" className="border-r border-sidebar-border bg-card group-data-[collapsible=icon]:bg-sidebar">
           <ChatSessionSidebar
             sessions={sessions}
             activeSessionId={activeSessionId}
@@ -47,22 +47,20 @@ export default function Home() {
 
         <SidebarInset>
           <div className="flex flex-col h-full w-full">
-            {/* Header for the main content panel */}
             <div className="p-3 border-b border-border flex items-center justify-between shrink-0 bg-card shadow-sm">
-              <div className="flex items-center">
+              <div className="flex items-center min-w-0"> {/* Added min-w-0 for truncation */}
                 <SidebarTrigger />
-                <h1 className="ml-3 text-lg font-semibold text-foreground truncate max-w-[calc(100vw-250px)] md:max-w-xs lg:max-w-sm xl:max-w-md" title={activeSessionTitle}> {/* Adjusted max-width */}
+                <h1 className="ml-3 text-lg font-semibold text-foreground truncate" title={activeSessionTitle}> 
                   {activeSessionTitle}
                 </h1>
               </div>
               {activeSessionId && <ChatHistoryControls onClearHistory={clearActiveSessionHistory} activeSessionId={activeSessionId} />}
             </div>
 
-            {/* Main chat content area */}
             <div className="flex-grow flex flex-col overflow-hidden">
               {activeSessionId ? (
                 <ChatInterface
-                  key={activeSessionId} // Ensures re-render on session change
+                  key={activeSessionId} 
                   messages={currentMessages}
                   isLoadingAI={isLoadingAI}
                   onSendMessage={sendMessage}
