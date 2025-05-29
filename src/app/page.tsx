@@ -5,9 +5,9 @@ import { ChatInterface } from '@/components/chat/ChatInterface';
 import { ChatSessionSidebar } from '@/components/chat/ChatSessionSidebar';
 import { useChat } from '@/hooks/useChat';
 import { Sidebar, SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
-import { ChatHistoryControls } from '@/components/chat/ChatHistoryControls'; // Added import
-import { Button } from '@/components/ui/button'; // Added for Start New Chat button
-import { MessageSquarePlus } from 'lucide-react'; // For welcome message icon
+import { ChatHistoryControls } from '@/components/chat/ChatHistoryControls';
+import { Button } from '@/components/ui/button';
+import { MessageSquarePlus, Loader2 } from 'lucide-react';
 
 export default function Home() {
   const { 
@@ -19,14 +19,22 @@ export default function Home() {
     startNewSession, 
     selectSession, 
     deleteSession,
-    clearActiveSessionHistory 
+    clearActiveSessionHistory,
+    isAnalyzingSession, // Added from useChat
   } = useChat();
 
   const activeSessionTitle = activeSessionId ? (sessions.find(s => s.id === activeSessionId)?.title || "Chat") : "ትውውቅ (Tewuwuq)";
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex h-screen max-h-screen bg-background text-foreground overflow-hidden">
+      <div className="flex h-screen max-h-screen bg-background text-foreground overflow-hidden relative"> {/* Added relative for overlay */}
+        {isAnalyzingSession && (
+          <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex flex-col items-center justify-center z-50 text-center p-4">
+              <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+              <p className="text-xl font-semibold text-foreground">Analyzing Session...</p>
+              <p className="text-sm text-muted-foreground">Please wait while the AI processes the chat history.</p>
+          </div>
+        )}
         <Sidebar side="left" collapsible="icon" className="border-r border-border bg-card">
           <ChatSessionSidebar
             sessions={sessions}
@@ -43,24 +51,22 @@ export default function Home() {
             <div className="p-3 border-b border-border flex items-center justify-between shrink-0 bg-card shadow-sm">
               <div className="flex items-center">
                 <SidebarTrigger />
-                <h1 className="ml-3 text-lg font-semibold text-foreground truncate max-w-[calc(100vw-200px)] md:max-w-sm lg:max-w-md" title={activeSessionTitle}>
+                <h1 className="ml-3 text-lg font-semibold text-foreground truncate max-w-[calc(100vw-250px)] md:max-w-xs lg:max-w-sm xl:max-w-md" title={activeSessionTitle}> {/* Adjusted max-width */}
                   {activeSessionTitle}
                 </h1>
               </div>
-              {activeSessionId && <ChatHistoryControls onClearHistory={clearActiveSessionHistory} />}
+              {activeSessionId && <ChatHistoryControls onClearHistory={clearActiveSessionHistory} activeSessionId={activeSessionId} />}
             </div>
 
             {/* Main chat content area */}
             <div className="flex-grow flex flex-col overflow-hidden">
               {activeSessionId ? (
                 <ChatInterface
-                  key={activeSessionId}
+                  key={activeSessionId} // Ensures re-render on session change
                   messages={currentMessages}
                   isLoadingAI={isLoadingAI}
                   onSendMessage={sendMessage}
-                  onClearHistory={clearActiveSessionHistory} // This prop is now for ChatHistoryControls, but ChatInterface might not need it anymore. Let's remove it from ChatInterface props.
                   currentSessionId={activeSessionId}
-                  // sessionTitle prop is removed from ChatInterface
                 />
               ) : (
                 <div className="flex-grow flex flex-col items-center justify-center text-center text-muted-foreground p-4 bg-gradient-to-br from-background to-muted/50">
@@ -69,7 +75,7 @@ export default function Home() {
                   <p className="mb-4">Start a new conversation or select one from the sidebar.</p>
                   <Button 
                     onClick={startNewSession}
-                    variant="default" // Explicitly setting default variant
+                    variant="default"
                     className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                   >
                     <MessageSquarePlus className="mr-2 h-4 w-4" /> 

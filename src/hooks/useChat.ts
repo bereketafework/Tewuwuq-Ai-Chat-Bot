@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { ChatMessage, ChatSession, ChatMessageFile } from '@/types/chat';
 import { analyzeTextAndFile, type AnalyzeTextAndFileInput } from '@/ai/flows/analyze-file-and-chat';
+import { analyzeChatSession, type AnalyzeChatSessionInput } from '@/ai/flows/analyze-chat-session';
 import { MessagePart, Role } from 'genkit';
 
 import { 
@@ -40,6 +41,7 @@ export function useChat() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionIdState] = useState<string | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [isAnalyzingSession, setIsAnalyzingSession] = useState(false); // For session analysis loading state
   const { toast } = useToast();
 
   useEffect(() => {
@@ -107,7 +109,7 @@ export function useChat() {
       setActiveSessionId(sessionId);
     } else {
       if (sessions.length > 0) {
-        setActiveSessionId(sessions[0].id);
+        setActiveSessionId(sessions.sort((a,b) => b.createdAt - a.createdAt)[0].id); // Select newest if current is gone
       } else {
         startNewSession();
       }
@@ -138,7 +140,6 @@ export function useChat() {
       file: file ? { name: file.name, type: file.type, dataUri: file.dataUri, size: file.size } : undefined,
     };
 
-    // Add user message to the session immediately
     const sessionsWithUserMessage = sessions.map(session => {
       if (session.id === currentSessionId) {
         const newMessages = [...session.messages, newUserMessage];
@@ -155,7 +156,7 @@ export function useChat() {
     try {
       const currentSession = sessionsWithUserMessage.find(s => s.id === currentSessionId);
       const chatHistoryForAI: AnalyzeTextAndFileInput['history'] = (currentSession?.messages || [])
-        .slice(0, -1) // Exclude the latest user message as it's passed separately or as part of currentMessage
+        .slice(0, -1) 
         .map(msg => {
           const parts: MessagePart[] = [];
           if (msg.text) parts.push({ text: msg.text });
@@ -209,7 +210,6 @@ export function useChat() {
         description: errorMessage,
         variant: 'destructive',
       });
-      // Optionally, revert the user message or add an error message to chat
        const sessionsAfterError = sessionsWithUserMessage.map(session => {
         if (session.id === currentSessionId) {
            const errorMsg: ChatMessage = {
@@ -261,6 +261,52 @@ export function useChat() {
     });
   }, [activeSessionId, sessions, updateSessionsAndSave, setActiveSessionId, toast]);
 
+  const performSessionAnalysis = useCallback(async (sessionId: string | null): Promise<string | null> => {
+    if (!sessionId) {
+      toast({ title: 'Error', description: 'No active session to analyze.', variant: 'destructive' });
+      return null;
+    }
+    const sessionToAnalyze = sessions.find(s => s.id === sessionId);
+    if (!sessionToAnalyze || sessionToAnalyze.messages.length === 0) {
+      toast({ title: 'Info', description: 'Session is empty or not found. Nothing to analyze.', variant: 'default' });
+      return null;
+    }
+
+    setIsAnalyzingSession(true);
+    try {
+      const input: AnalyzeChatSessionInput = {
+        messages: sessionToAnalyze.messages.map(m => ({
+          id: m.id,
+          text: m.text,
+          sender: m.sender,
+          timestamp: m.timestamp,
+          file: m.file,
+          reasoning: m.reasoning,
+        })),
+        sessionTitle: sessionToAnalyze.title,
+      };
+      const result = await analyzeChatSession(input);
+      return result.analysis;
+    } catch (error) {
+      console.error('Error analyzing chat session:', error);
+      let errorMessage = 'Failed to analyze session.';
+      if (error instanceof Error) {
+        errorMessage = error.message.includes('DEADLINE_EXCEEDED')
+          ? 'The analysis request timed out.'
+          : `Analysis Error: ${error.message.substring(0, 100)}`;
+      }
+      toast({
+        title: 'Analysis Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+      return null;
+    } finally {
+      setIsAnalyzingSession(false);
+    }
+  }, [sessions, toast]);
+
+
   const currentMessages = sessions.find(s => s.id === activeSessionId)?.messages || [];
 
   return {
@@ -273,5 +319,7 @@ export function useChat() {
     selectSession,
     deleteSession,
     clearActiveSessionHistory,
+    isAnalyzingSession,
+    performSessionAnalysis,
   };
 }
