@@ -2,7 +2,8 @@
 'use server';
 
 /**
- * @fileOverview An AI agent that translates English questions to Amharic and responds in Amharic,
+ * @fileOverview DEPRECATED - This flow is replaced by analyze-file-and-chat.ts
+ * An AI agent that translates English questions to Amharic and responds in Amharic,
  * with different modes for general and medical queries.
  *
  * - translateAndRespondInAmharic - A function that translates and responds in Amharic.
@@ -26,9 +27,19 @@ const TranslateAndRespondInAmharicOutputSchema = z.object({
 export type TranslateAndRespondInAmharicOutput = z.infer<typeof TranslateAndRespondInAmharicOutputSchema>;
 
 export async function translateAndRespondInAmharic(input: TranslateAndRespondInAmharicInput): Promise<TranslateAndRespondInAmharicOutput> {
-  return translateAndRespondInAmharicFlow(input);
+  // This flow is deprecated. Consider throwing an error or logging a warning.
+  console.warn("translateAndRespondInAmharic flow is deprecated. Use analyzeTextAndFile instead.");
+  // Fallback to a simple error response or a basic translation if absolutely necessary
+  return { 
+    amharicResponse: "ይህ ተግባር ተቋርጧል። እባክዎ አዲሱን ይጠቀሙ። (This function is deprecated. Please use the new one.)",
+    reasoning: "ምክንያታዊነት: ይህ የድሮ ተግባር በአዲስና በተሻሻለ ተግባር ተተክቷል።"
+  };
+
+  // Original logic (commented out as it's deprecated)
+  // return translateAndRespondInAmharicFlow(input);
 }
 
+/*
 const translateAndRespondInAmharicPrompt = ai.definePrompt({
   name: 'translateAndRespondInAmharicPrompt',
   input: {schema: z.object({
@@ -70,4 +81,4 @@ const translateAndRespondInAmharicFlow = ai.defineFlow(
     return output!;
   }
 );
-
+*/

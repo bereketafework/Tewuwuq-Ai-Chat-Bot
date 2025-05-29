@@ -1,31 +1,38 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type { ChatMessage, ChatSession } from '@/types/chat';
-import { translateAndRespondInAmharic, type TranslateAndRespondInAmharicInput } from '@/ai/flows/translate-and-respond-in-amharic';
+import type { ChatMessage, ChatSession, ChatMessageFile } from '@/types/chat';
+import { analyzeTextAndFile, type AnalyzeTextAndFileInput } from '@/ai/flows/analyze-file-and-chat';
+import { MessagePart, Role } from 'genkit';
+
 import { 
   loadChatSessions, 
   saveChatSessions, 
-  clearAllChatSessions as clearAllSessionsFromLs,
   loadActiveSessionId,
   saveActiveSessionId,
-  loadLegacyChatHistory, // For one-time migration
-  clearLegacyChatHistory // For one-time migration
+  loadLegacyChatHistory, 
+  clearLegacyChatHistory 
 } from '@/lib/localStorage';
 import { useToast } from '@/hooks/use-toast';
 
-const MAX_TITLE_LENGTH = 30;
+const MAX_TITLE_LENGTH = 35;
 
-function generateSessionTitle(firstMessageText?: string): string {
-  if (!firstMessageText) {
-    return `Chat ${new Date().toLocaleTimeString()}`;
+function generateSessionTitle(firstMessageText?: string, file?: ChatMessageFile): string {
+  let baseTitle = "New Chat";
+  if (file) {
+    baseTitle = file.name;
+  } else if (firstMessageText) {
+    baseTitle = firstMessageText;
   }
-  const words = firstMessageText.split(' ');
-  let title = words.slice(0, 5).join(' ');
-  if (title.length > MAX_TITLE_LENGTH) {
-    title = title.substring(0, MAX_TITLE_LENGTH) + '...';
+
+  if (baseTitle.length > MAX_TITLE_LENGTH) {
+    return baseTitle.substring(0, MAX_TITLE_LENGTH -3) + '...';
   }
-  return title || `Chat ${new Date().toLocaleTimeString()}`;
+  if (baseTitle === "New Chat" || !baseTitle.trim()) {
+     return `Chat ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  }
+  return baseTitle;
 }
 
 
@@ -36,7 +43,6 @@ export function useChat() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // One-time migration from legacy chat history
     const legacyMessages = loadLegacyChatHistory();
     let loadedSessions = loadChatSessions();
 
@@ -46,23 +52,23 @@ export function useChat() {
         title: generateSessionTitle(legacyMessages[0]?.text),
         messages: legacyMessages,
         timestamp: legacyMessages[legacyMessages.length - 1]?.timestamp || Date.now(),
-        createdAt: Date.now(),
+        createdAt: legacyMessages[0]?.timestamp || Date.now(),
       };
       loadedSessions = [newSession];
       saveChatSessions(loadedSessions);
-      setActiveSessionIdState(newSession.id);
+      setActiveSessionIdState(newSession.id); // Set active session
       saveActiveSessionId(newSession.id);
-      clearLegacyChatHistory(); // Clear old history after migration
+      clearLegacyChatHistory();
       toast({ title: "Chat history updated", description: "Your previous chat has been saved as a new session." });
     }
     
-    setSessions(loadedSessions.sort((a, b) => b.createdAt - a.createdAt)); // Sort by creation date
+    setSessions(loadedSessions.sort((a, b) => b.createdAt - a.createdAt));
     
     const storedActiveId = loadActiveSessionId();
     if (storedActiveId && loadedSessions.find(s => s.id === storedActiveId)) {
       setActiveSessionIdState(storedActiveId);
     } else if (loadedSessions.length > 0) {
-      setActiveSessionIdState(loadedSessions[0].id); // Default to the newest session if no active one or active one is invalid
+      setActiveSessionIdState(loadedSessions[0].id); 
       saveActiveSessionId(loadedSessions[0].id);
     } else {
       setActiveSessionIdState(null);
@@ -85,12 +91,12 @@ export function useChat() {
     const newSessionId = `session-${Date.now()}`;
     const newSession: ChatSession = {
       id: newSessionId,
-      title: `New Chat (${new Date().toLocaleDateString([], { month: 'short', day: 'numeric'})})`, // Placeholder title
+      title: `New Chat (${new Date().toLocaleDateString([], { month: 'short', day: 'numeric'})})`,
       messages: [],
       timestamp: Date.now(),
       createdAt: Date.now(),
     };
-    const updatedSessions = [newSession, ...sessions];
+    const updatedSessions = [newSession, ...sessions]; // Add to the beginning
     updateSessionsAndSave(updatedSessions);
     setActiveSessionId(newSessionId);
     return newSessionId;
@@ -100,7 +106,6 @@ export function useChat() {
     if (sessions.find(s => s.id === sessionId)) {
       setActiveSessionId(sessionId);
     } else {
-      // If session doesn't exist, maybe default to first or new
       if (sessions.length > 0) {
         setActiveSessionId(sessions[0].id);
       } else {
@@ -109,59 +114,79 @@ export function useChat() {
     }
   }, [sessions, setActiveSessionId, startNewSession]);
 
-  const sendMessage = useCallback(async (text: string, mode: TranslateAndRespondInAmharicInput['mode']) => {
-    if (!text.trim()) return;
+  const sendMessage = useCallback(async (
+    text: string, 
+    mode: AnalyzeTextAndFileInput['mode'],
+    file?: ChatMessageFile
+  ) => {
+    if (!text.trim() && !file) return;
 
     let currentSessionId = activeSessionId;
+    let isNewSession = false;
     if (!currentSessionId) {
-      currentSessionId = startNewSession(); // Create a new session if none is active
+      currentSessionId = startNewSession();
+      isNewSession = true;
     }
     
+    const userMessageText = text || (file ? `File: ${file.name}` : "User initiated action");
+
     const newUserMessage: ChatMessage = {
       id: `user-${Date.now()}`,
-      text,
+      text: userMessageText,
       sender: 'user',
       timestamp: Date.now(),
+      file: file ? { name: file.name, type: file.type, dataUri: file.dataUri, size: file.size } : undefined,
     };
 
-    const updatedSessions = sessions.map(session => {
+    // Add user message to the session immediately
+    const sessionsWithUserMessage = sessions.map(session => {
       if (session.id === currentSessionId) {
         const newMessages = [...session.messages, newUserMessage];
-        // Update title for new chats based on first message
-        const newTitle = (session.messages.length === 0) ? generateSessionTitle(text) : session.title;
+        const newTitle = (isNewSession || session.messages.length === 0) 
+                         ? generateSessionTitle(text, file) 
+                         : session.title;
         return { ...session, messages: newMessages, title: newTitle, timestamp: Date.now() };
       }
       return session;
     });
-    updateSessionsAndSave(updatedSessions);
+    updateSessionsAndSave(sessionsWithUserMessage);
     setIsLoadingAI(true);
 
     try {
-      const aiResponse = await translateAndRespondInAmharic({ englishInput: text, mode });
-      
-      let aiMessageText = aiResponse.amharicResponse;
-      if (aiResponse.reasoning) {
-        aiMessageText += `\n\n---\n${aiResponse.reasoning}`;
+      const currentSession = sessionsWithUserMessage.find(s => s.id === currentSessionId);
+      const chatHistoryForAI: AnalyzeTextAndFileInput['history'] = (currentSession?.messages || [])
+        .slice(0, -1) // Exclude the latest user message as it's passed separately or as part of currentMessage
+        .map(msg => {
+          const parts: MessagePart[] = [];
+          if (msg.text) parts.push({ text: msg.text });
+          if (msg.file) parts.push({ media: { url: msg.file.dataUri, contentType: msg.file.type } });
+          
+          return {
+            role: msg.sender === 'user' ? 'user' : 'model' as Role,
+            parts: parts,
+          };
+        });
+
+      const aiInput: AnalyzeTextAndFileInput = {
+        history: chatHistoryForAI,
+        currentMessageText: text,
+        mode,
+      };
+      if (file) {
+        aiInput.currentFile = { dataUri: file.dataUri, mimeType: file.type };
       }
+      
+      const aiResponse = await analyzeTextAndFile(aiInput);
       
       const newAiMessage: ChatMessage = {
         id: `ai-${Date.now()}`,
-        text: aiMessageText,
+        text: aiResponse.amharicResponse,
         sender: 'ai',
         timestamp: Date.now(),
+        reasoning: aiResponse.reasoning,
       };
 
-      const finalSessions = sessions.map(session => {
-        if (session.id === currentSessionId) {
-          return { ...session, messages: [...session.messages, newUserMessage, newAiMessage], timestamp: Date.now() };
-        }
-        // This is tricky: we need to get the latest state of session.messages that includes newUserMessage
-        // It's better to update based on the `updatedSessions` state from before the API call
-        return session; 
-      });
-      
-      // Find the session to update from the version that already has the user message
-       const sessionsWithAiResponse = updatedSessions.map(session => {
+      const sessionsWithAiResponse = sessionsWithUserMessage.map(session => {
         if (session.id === currentSessionId) {
            return { ...session, messages: [...session.messages, newAiMessage], timestamp: Date.now() };
         }
@@ -171,12 +196,33 @@ export function useChat() {
 
     } catch (error) {
       console.error('Error communicating with AI:', error);
+      let errorMessage = 'Failed to get response from AI. Please try again.';
+      if (error instanceof Error) {
+        errorMessage = error.message.includes('DEADLINE_EXCEEDED') 
+          ? 'The request to the AI timed out. Please try again.'
+          : error.message.includes('API key not valid')
+            ? 'Invalid API Key. Please check your API key in the .env file.'
+            : `AI Error: ${error.message.substring(0,100)}`;
+      }
       toast({
         title: 'Error',
-        description: 'Failed to get response from AI. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
-      // Revert user message if AI fails? Or keep it? For now, keep.
+      // Optionally, revert the user message or add an error message to chat
+       const sessionsAfterError = sessionsWithUserMessage.map(session => {
+        if (session.id === currentSessionId) {
+           const errorMsg: ChatMessage = {
+             id: `err-${Date.now()}`,
+             text: `Error: Could not get AI response. (${errorMessage})`,
+             sender: 'ai',
+             timestamp: Date.now()
+           }
+           return { ...session, messages: [...session.messages, errorMsg], timestamp: Date.now() };
+        }
+        return session;
+      });
+      updateSessionsAndSave(sessionsAfterError);
     } finally {
       setIsLoadingAI(false);
     }
@@ -204,9 +250,9 @@ export function useChat() {
 
     if (activeSessionId === sessionIdToDelete) {
       if (remainingSessions.length > 0) {
-        setActiveSessionId(remainingSessions[0].id); // Select the newest remaining
+        setActiveSessionId(remainingSessions.sort((a,b) => b.createdAt - a.createdAt)[0].id);
       } else {
-        setActiveSessionId(null); // No sessions left
+        setActiveSessionId(null); 
       }
     }
     toast({

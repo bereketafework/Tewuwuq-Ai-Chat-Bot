@@ -4,8 +4,10 @@
 import type { ChatMessage } from '@/types/chat';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { User, Bot } from 'lucide-react';
+import { User, Bot, FileText, ImageIcon } from 'lucide-react';
 import React from 'react';
+import Image from 'next/image'; // For image previews
+import { Badge } from '@/components/ui/badge'; // For reasoning display
 
 interface ChatMessageItemProps {
   message: ChatMessage;
@@ -19,44 +21,85 @@ export function ChatMessageItem({ message }: ChatMessageItemProps) {
     : 'bg-card text-card-foreground rounded-tl-none';
   const avatarIcon = isUser ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />;
   
-  // Animation for message arrival
   const animationClasses = 'animate-in fade-in-0 slide-in-from-bottom-4 duration-500 ease-out';
 
-  const renderTextWithBold = (text: string) => {
-    const parts = text.split(/(\*\*.*?\*\*)/g); // Split by **bolded text**
+  const renderTextWithFormatting = (text: string) => {
+    const parts = text.split(/(\*\*.*?\*\*|\n)/g).filter(part => part.length > 0); // Split by **bolded text** or newline
     return parts.map((part, index) => {
       if (part.startsWith('**') && part.endsWith('**')) {
         return <strong key={index}>{part.substring(2, part.length - 2)}</strong>;
       }
-      // For non-bold parts, preserve newlines by splitting and adding <br />
-      // This is simplistic; a proper markdown parser would be better for complex markdown.
-      // However, for bold and newlines, this should suffice.
-      return part.split('\n').map((line, lineIndex, arr) => (
-        <React.Fragment key={`${index}-${lineIndex}`}>
-          {line}
-          {lineIndex < arr.length - 1 && <br />}
-        </React.Fragment>
-      ));
+      if (part === '\n') {
+        return <br key={index} />;
+      }
+      return <span key={index}>{part}</span>; // Use span to ensure keys are applied correctly for fragments
     });
   };
 
+  const renderFilePreview = (file: ChatMessage['file']) => {
+    if (!file) return null;
+
+    const isImage = file.type.startsWith('image/');
+    
+    // Simple inline preview for images, icon for PDFs
+    if (isImage) {
+      return (
+        <div className="mt-2 p-2 border border-border rounded-md bg-background/50 max-w-xs">
+          <Image 
+            src={file.dataUri} 
+            alt={file.name} 
+            width={150} 
+            height={100} 
+            className="rounded object-contain max-h-40" 
+          />
+          <p className="text-xs text-muted-foreground mt-1 truncate">{file.name}</p>
+        </div>
+      );
+    } else if (file.type === 'application/pdf') {
+      return (
+        <div className="mt-2 p-2 border border-border rounded-md bg-background/50 flex items-center gap-2 max-w-xs">
+          <FileText className="h-6 w-6 text-muted-foreground" />
+          <p className="text-sm text-foreground truncate">{file.name}</p>
+        </div>
+      );
+    }
+    return (
+      <div className="mt-2 p-2 border border-border rounded-md bg-background/50 flex items-center gap-2 max-w-xs">
+        <ImageIcon className="h-6 w-6 text-muted-foreground" /> {/* Fallback icon */}
+        <p className="text-sm text-foreground truncate">{file.name}</p>
+      </div>
+    );
+  };
+
+
   return (
-    <div className={cn('flex flex-col gap-2 py-3', alignment, animationClasses)}>
+    <div className={cn('flex flex-col gap-1 py-3', alignment, animationClasses)}> {/* Reduced gap-2 to gap-1 */}
       <div className={cn('flex items-end gap-2', isUser ? 'flex-row-reverse' : 'flex-row')}>
-        <Avatar className="h-8 w-8">
+        <Avatar className="h-8 w-8 shrink-0">
           <AvatarFallback className={cn(isUser ? 'bg-accent text-accent-foreground' : 'bg-secondary text-secondary-foreground')}>
             {avatarIcon}
           </AvatarFallback>
         </Avatar>
         <div
           className={cn(
-            'max-w-[70%] rounded-xl p-3 shadow-md break-words',
+            'max-w-[70%] rounded-xl p-3 shadow-md break-words', // Ensure break-words is applied
             bubbleStyles
           )}
         >
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">
-            {renderTextWithBold(message.text)}
-          </p>
+          <div className="text-sm leading-relaxed whitespace-pre-wrap"> {/* Changed p to div for block display of children */}
+            {renderTextWithFormatting(message.text)}
+          </div>
+          {message.file && renderFilePreview(message.file)}
+          {message.reasoning && !isUser && (
+            <details className="mt-2 text-xs">
+              <summary className="cursor-pointer text-muted-foreground/80 hover:text-muted-foreground">
+                View Reasoning
+              </summary>
+              <div className="mt-1 p-2 border-t border-dashed border-current/30">
+                 {renderTextWithFormatting(message.reasoning)}
+              </div>
+            </details>
+          )}
         </div>
       </div>
       <p className={cn('text-xs text-muted-foreground px-10', isUser ? 'text-right' : 'text-left')}>
@@ -65,4 +108,3 @@ export function ChatMessageItem({ message }: ChatMessageItemProps) {
     </div>
   );
 }
-
