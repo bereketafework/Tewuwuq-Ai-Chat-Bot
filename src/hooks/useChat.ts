@@ -40,8 +40,8 @@ export function useChat() {
       const aiResponse = await translateAndRespondInAmharic({ englishInput: text, mode });
       
       let aiMessageText = aiResponse.amharicResponse;
-      if (mode === 'medical' && aiResponse.reasoning) {
-        // The reasoning from AI should already start with "ምክንያታዊነት:"
+      if (aiResponse.reasoning) { // Applies to both modes if reasoning is present
+        // The AI prompt is responsible for the "ምክንያታዊነት:" prefix.
         aiMessageText += `\n\n---\n${aiResponse.reasoning}`;
       }
       
@@ -80,3 +80,4 @@ export function useChat() {
     clearHistory,
   };
 }
+
