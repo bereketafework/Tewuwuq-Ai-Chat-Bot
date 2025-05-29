@@ -71,24 +71,34 @@ When responding to medical queries, analyze any provided text and/or files (imag
 Provide detailed information in Amharic, including potential symptoms, causes, diagnostic approaches, and general treatment options or lifestyle adjustments.
 Structure your response clearly. Use Markdown for bolding titles or important phrases (e.g., **ዋና የህክምና ርዕስ:**).
 It is CRUCIAL to ALWAYS explicitly state in Amharic that your information is NOT a substitute for professional medical advice and that the user MUST consult with a qualified healthcare provider for any health concerns or before making any medical decisions. This disclaimer should be part of the main Amharic response.
-The user's current query is: "{{{currentMessageText}}}"
+
 {{#if currentFile}}
-An accompanying file ({{currentFile.mimeType}}) is attached.
-Here is the file content: {{media url=currentFile.dataUri}}
-Analyze its content along with the user's message.
+A file ({{currentFile.mimeType}}) has been uploaded by the user.
+File content: {{media url=currentFile.dataUri}}
+First, summarize the key information or describe the visual elements of this file in Amharic.
+Then, considering this file and the user's message "{{{currentMessageText}}}", provide your comprehensive medical Amharic response.
+{{else}}
+The user's current query is: "{{{currentMessageText}}}"
+Provide your comprehensive medical Amharic response to this query.
 {{/if}}
-Respond comprehensively in Amharic.
+
 Finally, provide your reasoning as a separate thought process. This reasoning should be in Amharic and start with the label "ምክንያታዊነት:" (Reasoning:). This reasoning should be part of the 'reasoning' output field.
+
 {{else}}
 You are a helpful AI assistant fluent in Amharic. Your knowledge should be comprehensive and up-to-date.
 Analyze any provided text and/or files (images, PDFs).
-The user's current query is: "{{{currentMessageText}}}"
+Structure your response clearly. Use Markdown for bolding titles or important phrases (e.g., **ዋና ርዕስ:**).
+
 {{#if currentFile}}
-An accompanying file ({{currentFile.mimeType}}) is attached.
-Here is the file content: {{media url=currentFile.dataUri}}
-Analyze its content along with the user's message.
+A file ({{currentFile.mimeType}}) has been uploaded by the user.
+File content: {{media url=currentFile.dataUri}}
+First, summarize the key information or describe the visual elements of this file in Amharic.
+Then, considering this file and the user's message "{{{currentMessageText}}}", provide your comprehensive Amharic response.
+{{else}}
+The user's current query is: "{{{currentMessageText}}}"
+Provide your comprehensive Amharic response to this query.
 {{/if}}
-Respond comprehensively and in detail in Amharic. Structure your response clearly. Use Markdown for bolding titles or important phrases (e.g., **ዋና ርዕስ:**).
+
 Finally, provide your reasoning or thinking process as a separate section. This reasoning should be in Amharic and start with the label "ምክንያታዊነት:" (Reasoning:). This reasoning should be part of the 'reasoning' output field.
 {{/if}}`
 });
@@ -101,40 +111,18 @@ const analyzeTextAndFileFlow = ai.defineFlow(
   },
   async (flowInput) => {
     const { history, currentMessageText, currentFile, mode } = flowInput;
-
-    // The 'messages' constant that was here using defineMessage was unused and causing the error. It has been removed.
     
-    // const currentUserParts: MessagePart[] = []; 
-    // if (currentMessageText) {
-    //   currentUserParts.push({ text: currentMessageText });
-    // }
-    // if (currentFile) {
-    //   currentUserParts.push({ media: { url: currentFile.dataUri, contentType: currentFile.mimeType } });
-    // }
-    // if (currentUserParts.length > 0) {
-      // The line below was commented out in the provided code. If it were active,
-      // it would modify a 'messages' array which is no longer defined here.
-      // messages.push(defineMessage({ role: 'user', parts: currentUserParts })); 
-    // }
-    
-    // The system prompt itself now forms the basis of the 'user' message to the model,
-    // as it contains the instructions templated with currentFile and currentMessageText.
-    // The actual chat history is passed via the `history` parameter to `generate`.
-
     const {output} = await systemPrompt(
-        { // This is the input to the systemPrompt template processing
+        { 
             currentMessageText: currentMessageText || "",
             currentFile: currentFile,
             isMedicalMode: mode === 'medical',
         },
-        { // These are options for the ai.generate call that the prompt wraps
-            history: history || [], // Use history directly as it's already formatted
+        { 
+            history: history || [], 
         }
     );
     
-    // The systemPrompt call now directly invokes the model with history.
-    // So, the output is directly from that call.
-
     if (!output) {
       throw new Error('AI did not return an output.');
     }
