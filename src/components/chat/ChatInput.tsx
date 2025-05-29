@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { SendHorizonal, Loader2, Paperclip, XCircle } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { AnalyzeTextAndFileInput } from '@/ai/flows/analyze-file-and-chat'; // Updated import
+import type { AnalyzeTextAndFileInput } from '@/ai/flows/analyze-file-and-chat';
 import { useToast } from '@/hooks/use-toast';
 
 interface ChatInputProps {
@@ -41,7 +41,7 @@ export function ChatInput({ onSendMessage, isLoading, currentMode, onModeChange 
           description: `Please select a file smaller than ${MAX_FILE_SIZE_MB}MB.`,
           variant: 'destructive',
         });
-        if (fileInputRef.current) fileInputRef.current.value = ""; // Reset file input
+        if (fileInputRef.current) fileInputRef.current.value = ""; 
         return;
       }
       if (!ALLOWED_FILE_TYPES.includes(file.type)) {
@@ -50,7 +50,7 @@ export function ChatInput({ onSendMessage, isLoading, currentMode, onModeChange 
           description: `Please select an image (JPEG, PNG, GIF, WEBP) or PDF file. Detected: ${file.type}`,
           variant: 'destructive',
         });
-        if (fileInputRef.current) fileInputRef.current.value = ""; // Reset file input
+        if (fileInputRef.current) fileInputRef.current.value = ""; 
         return;
       }
 
@@ -70,7 +70,7 @@ export function ChatInput({ onSendMessage, isLoading, currentMode, onModeChange 
   const clearSelectedFile = () => {
     setSelectedFile(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = ""; // Reset the file input
+      fileInputRef.current.value = ""; 
     }
   };
 
@@ -86,19 +86,19 @@ export function ChatInput({ onSendMessage, isLoading, currentMode, onModeChange 
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-2 p-3 border-t border-border bg-background sticky bottom-0"
+      className="flex flex-col gap-2 p-3 border-t bg-background sticky bottom-0 shadow-sm" // Use theme bg, add shadow
     >
       {selectedFile && (
-        <div className="flex items-center justify-between p-2 text-sm bg-muted rounded-md border border-input">
-          <span className="truncate text-muted-foreground">
-            <Paperclip className="inline h-4 w-4 mr-1" /> {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+        <div className="flex items-center justify-between p-2 text-sm bg-card rounded-lg border"> {/* Use card bg */}
+          <span className="truncate text-muted-foreground flex items-center">
+            <Paperclip className="inline h-4 w-4 mr-2 text-primary" /> {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
           </span>
-          <Button type="button" variant="ghost" size="icon" onClick={clearSelectedFile} className="h-6 w-6 text-muted-foreground hover:text-destructive">
+          <Button type="button" variant="ghost" size="icon" onClick={clearSelectedFile} className="h-7 w-7 text-muted-foreground hover:text-destructive">
             <XCircle className="h-4 w-4" />
           </Button>
         </div>
       )}
-      <div className="flex items-center flex-wrap gap-2">
+      <div className="flex items-center flex-wrap gap-2 sm:gap-3">
         <div className="flex-shrink-0">
           <Label htmlFor="chat-mode-select" className="sr-only">Chat Mode</Label>
           <Select
@@ -108,13 +108,13 @@ export function ChatInput({ onSendMessage, isLoading, currentMode, onModeChange 
             name="chat-mode-select"
           >
             <SelectTrigger 
-              className="w-auto min-w-[120px] bg-muted focus-visible:ring-accent h-10"
+              className="w-auto min-w-[110px] sm:min-w-[120px] bg-card focus-visible:ring-primary h-10 text-sm" // Use card bg, primary ring
               aria-label="Select chat mode"
               id="chat-mode-select"
             >
               <SelectValue placeholder="Select mode" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-popover text-popover-foreground">
               <SelectItem value="general">General</SelectItem>
               <SelectItem value="medical">Medical</SelectItem>
             </SelectContent>
@@ -125,15 +125,15 @@ export function ChatInput({ onSendMessage, isLoading, currentMode, onModeChange 
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           placeholder={currentMode === 'medical' ? "Ask medical questions..." : "Type message or attach file..."}
-          className="flex-grow bg-muted focus-visible:ring-accent min-w-[150px]"
+          className="flex-grow bg-card focus-visible:ring-primary min-w-[100px] text-sm h-10" // Use card bg, primary ring
           disabled={isLoading}
           aria-label="Chat message input"
         />
         <Button 
           type="button" 
           size="icon" 
-          variant="ghost" 
-          className="text-muted-foreground hover:text-accent flex-shrink-0" 
+          variant="outline" // More subtle for attach
+          className="text-primary border-primary hover:bg-primary/10 flex-shrink-0 h-10 w-10" 
           onClick={() => fileInputRef.current?.click()}
           disabled={isLoading}
           aria-label="Attach file"
@@ -150,8 +150,8 @@ export function ChatInput({ onSendMessage, isLoading, currentMode, onModeChange 
         <Button 
           type="submit" 
           size="icon" 
-          variant="default" // Changed to default for better visibility
-          className="bg-accent text-accent-foreground hover:bg-accent/90 flex-shrink-0" 
+          variant="default" 
+          className="bg-primary text-primary-foreground hover:bg-primary/90 flex-shrink-0 h-10 w-10" 
           disabled={isLoading || (!inputValue.trim() && !selectedFile)} 
           aria-label="Send message"
         >

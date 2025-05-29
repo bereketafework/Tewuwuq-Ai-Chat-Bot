@@ -7,7 +7,7 @@ import { useChat } from '@/hooks/useChat';
 import { Sidebar, SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import { ChatHistoryControls } from '@/components/chat/ChatHistoryControls';
 import { Button } from '@/components/ui/button';
-import { MessageSquarePlus, Loader2 } from 'lucide-react';
+import { MessageSquarePlus, Loader2, MessageCircle } from 'lucide-react'; // Added MessageCircle
 
 export default function Home() {
   const { 
@@ -19,7 +19,7 @@ export default function Home() {
     startNewSession, 
     selectSession, 
     deleteSession,
-    clearActiveSessionHistory,
+    clearActiveSessionHistory, // This now deletes the session
     isAnalyzingSession,
   } = useChat();
 
@@ -35,7 +35,7 @@ export default function Home() {
               <p className="text-sm text-muted-foreground">Please wait while the AI processes the chat history.</p>
           </div>
         )}
-        <Sidebar side="left" collapsible="icon" className="border-r border-sidebar-border bg-card group-data-[collapsible=icon]:bg-sidebar">
+        <Sidebar side="left" collapsible="icon" className="border-r border-sidebar-border bg-sidebar group-data-[collapsible=icon]:bg-sidebar">
           <ChatSessionSidebar
             sessions={sessions}
             activeSessionId={activeSessionId}
@@ -47,17 +47,17 @@ export default function Home() {
 
         <SidebarInset>
           <div className="flex flex-col h-full w-full">
-            <div className="p-3 border-b border-border flex items-center justify-between shrink-0 bg-card shadow-sm">
-              <div className="flex items-center min-w-0"> {/* Added min-w-0 for truncation */}
+            <header className="p-3 border-b border-border flex items-center justify-between shrink-0 bg-card shadow-sm"> {/* Header uses card bg */}
+              <div className="flex items-center min-w-0"> 
                 <SidebarTrigger />
                 <h1 className="ml-3 text-lg font-semibold text-foreground truncate" title={activeSessionTitle}> 
                   {activeSessionTitle}
                 </h1>
               </div>
               {activeSessionId && <ChatHistoryControls onClearHistory={clearActiveSessionHistory} activeSessionId={activeSessionId} />}
-            </div>
+            </header>
 
-            <div className="flex-grow flex flex-col overflow-hidden">
+            <main className="flex-grow flex flex-col overflow-hidden"> {/* Changed div to main for semantics */}
               {activeSessionId ? (
                 <ChatInterface
                   key={activeSessionId} 
@@ -67,21 +67,24 @@ export default function Home() {
                   currentSessionId={activeSessionId}
                 />
               ) : (
-                <div className="flex-grow flex flex-col items-center justify-center text-center text-muted-foreground p-4 bg-gradient-to-br from-background to-muted/50">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-square-plus mb-4 opacity-50"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" x2="15" y1="10" y2="10"/><line x1="12" x2="12" y1="7" y2="13"/></svg>
-                  <h2 className="text-2xl font-semibold mb-2">Welcome to ትውውቅ (Tewuwuq)</h2>
-                  <p className="mb-4">Start a new conversation or select one from the sidebar.</p>
+                <div className="flex-grow flex flex-col items-center justify-center text-center text-muted-foreground p-6 bg-gradient-to-br from-background to-muted/30"> {/* Softer gradient */}
+                  <MessageCircle className="lucide lucide-message-circle-heart mb-6 h-16 w-16 opacity-40 text-primary" /> {/* Larger icon */}
+                  <h2 className="text-2xl font-semibold mb-2 text-foreground">Welcome to ትውውቅ (Tewuwuq)</h2>
+                  <p className="mb-6 max-w-md text-muted-foreground">
+                    Start a new conversation by clicking the button below or select an existing one from the sidebar.
+                  </p>
                   <Button 
                     onClick={startNewSession}
                     variant="default"
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                    size="lg" // Larger button
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-md hover:shadow-lg"
                   >
-                    <MessageSquarePlus className="mr-2 h-4 w-4" /> 
+                    <MessageSquarePlus className="mr-2 h-5 w-5" /> 
                     Start New Chat
                   </Button>
                 </div>
               )}
-            </div>
+            </main>
           </div>
         </SidebarInset>
       </div>

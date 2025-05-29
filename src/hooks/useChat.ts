@@ -70,8 +70,9 @@ export function useChat() {
     if (storedActiveId && loadedSessions.find(s => s.id === storedActiveId)) {
       setActiveSessionIdState(storedActiveId);
     } else if (loadedSessions.length > 0) {
-      setActiveSessionIdState(loadedSessions[0].id); 
-      saveActiveSessionId(loadedSessions[0].id);
+      const newestSessionId = loadedSessions.sort((a,b) => b.createdAt - a.createdAt)[0].id;
+      setActiveSessionIdState(newestSessionId); 
+      saveActiveSessionId(newestSessionId);
     } else {
       setActiveSessionIdState(null);
       saveActiveSessionId(null);
@@ -93,7 +94,7 @@ export function useChat() {
     const newSessionId = `session-${Date.now()}`;
     const newSession: ChatSession = {
       id: newSessionId,
-      title: `New Chat (${new Date().toLocaleDateString([], { month: 'short', day: 'numeric'})})`,
+      title: `Chat ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`, // More descriptive default title
       messages: [],
       timestamp: Date.now(),
       createdAt: Date.now(),
@@ -125,7 +126,9 @@ export function useChat() {
 
     let currentSessionId = activeSessionId;
     let isNewSession = false;
-    if (!currentSessionId) {
+    const activeSessionExists = sessions.find(s => s.id === currentSessionId);
+
+    if (!currentSessionId || !activeSessionExists) {
       currentSessionId = startNewSession();
       isNewSession = true;
     }
@@ -164,9 +167,10 @@ export function useChat() {
           
           return {
             role: msg.sender === 'user' ? 'user' : 'model' as Role,
-            parts: parts,
+            parts: parts.filter(p => (p.text !== undefined && p.text !== null) || p.media !== undefined), // Ensure parts are not empty
           };
-        });
+        }).filter(h => h.parts.length > 0); // Ensure history items have parts
+
 
       const aiInput: AnalyzeTextAndFileInput = {
         history: chatHistoryForAI,
@@ -228,38 +232,37 @@ export function useChat() {
     }
   }, [activeSessionId, sessions, updateSessionsAndSave, toast, startNewSession]);
 
-  const clearActiveSessionHistory = useCallback(() => {
-    if (!activeSessionId) return;
-
-    const updatedSessions = sessions.map(session => {
-      if (session.id === activeSessionId) {
-        return { ...session, messages: [], timestamp: Date.now() };
-      }
-      return session;
-    });
-    updateSessionsAndSave(updatedSessions);
-    toast({
-      title: 'Chat Cleared',
-      description: 'The current chat session history has been removed.',
-    });
-  }, [activeSessionId, sessions, updateSessionsAndSave, toast]);
-
   const deleteSession = useCallback((sessionIdToDelete: string) => {
     const remainingSessions = sessions.filter(session => session.id !== sessionIdToDelete);
     updateSessionsAndSave(remainingSessions);
 
     if (activeSessionId === sessionIdToDelete) {
       if (remainingSessions.length > 0) {
+        // Select the newest session among the remaining ones
         setActiveSessionId(remainingSessions.sort((a,b) => b.createdAt - a.createdAt)[0].id);
       } else {
-        setActiveSessionId(null); 
+        setActiveSessionId(null); // No sessions left, set active to null
       }
     }
     toast({
-      title: 'Chat Deleted',
+      title: 'Chat Session Deleted',
       description: 'The chat session has been removed.',
     });
   }, [activeSessionId, sessions, updateSessionsAndSave, setActiveSessionId, toast]);
+
+  // Changed: "Clear Chat History" now means "Delete Current Session"
+  const clearActiveSessionHistory = useCallback(() => {
+    if (!activeSessionId) {
+      toast({
+        title: 'No Active Session',
+        description: 'There is no active session to delete.',
+        variant: 'default',
+      });
+      return;
+    }
+    deleteSession(activeSessionId);
+  }, [activeSessionId, deleteSession, toast]);
+
 
   const performSessionAnalysis = useCallback(async (sessionId: string | null): Promise<string | null> => {
     if (!sessionId) {
@@ -318,7 +321,7 @@ export function useChat() {
     startNewSession,
     selectSession,
     deleteSession,
-    clearActiveSessionHistory,
+    clearActiveSessionHistory, // This now effectively deletes the current session
     isAnalyzingSession,
     performSessionAnalysis,
   };

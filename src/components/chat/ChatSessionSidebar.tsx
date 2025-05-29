@@ -19,7 +19,7 @@ import {
 import { MessageSquarePlus, Trash2, Edit3, Check, X, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
-import { SidebarHeader, SidebarContent, SidebarFooter } from '@/components/ui/sidebar';
+import { SidebarHeader, SidebarContent, SidebarFooter } from '@/components/ui/sidebar'; // Using sidebar structure components
 
 interface ChatSessionSidebarProps {
   sessions: ChatSession[];
@@ -27,7 +27,6 @@ interface ChatSessionSidebarProps {
   onSelectSession: (sessionId: string) => void;
   onNewChat: () => void;
   onDeleteSession: (sessionId: string) => void;
-  // onRenameSession: (sessionId: string, newTitle: string) => void; 
 }
 
 export function ChatSessionSidebar({
@@ -36,12 +35,12 @@ export function ChatSessionSidebar({
   onSelectSession,
   onNewChat,
   onDeleteSession,
-  // onRenameSession,
 }: ChatSessionSidebarProps) {
-  const [renamingSessionId, setRenamingSessionId] = useState<string | null>(null);
-  const [newTitle, setNewTitle] = useState('');
+  const [renamingSessionId, setRenamingSessionId] = useState<string | null>(null); // Keep for future rename
+  const [newTitle, setNewTitle] = useState(''); // Keep for future rename
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
 
+  // Simplified rename handlers for now, not fully wired to useChat
   const handleRenameStart = (session: ChatSession) => {
     setRenamingSessionId(session.id);
     setNewTitle(session.title);
@@ -49,8 +48,8 @@ export function ChatSessionSidebar({
 
   const handleRenameSubmit = (sessionId: string) => {
     if (newTitle.trim()) {
-      // onRenameSession(sessionId, newTitle.trim()); 
-      console.warn("Rename functionality not fully wired up in useChat yet. Session ID:", sessionId, "New Title:", newTitle.trim());
+      console.warn("Rename functionality not fully implemented yet. Session ID:", sessionId, "New Title:", newTitle.trim());
+      // onRenameSession(sessionId, newTitle.trim()); // This would be the call
       setRenamingSessionId(null);
     }
   };
@@ -69,7 +68,11 @@ export function ChatSessionSidebar({
   return (
     <>
       <SidebarHeader className="p-3 border-b border-sidebar-border">
-        <Button onClick={onNewChat} variant="outline" className="w-full justify-start text-accent-foreground hover:bg-accent/90 bg-accent">
+        <Button 
+          onClick={onNewChat} 
+          variant="default" // Primary action
+          className="w-full justify-start bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+        >
           <MessageSquarePlus className="mr-2 h-4 w-4" />
           New Chat
         </Button>
@@ -78,17 +81,17 @@ export function ChatSessionSidebar({
       <SidebarContent className="p-2 flex-grow group-data-[collapsible=icon]:overflow-hidden">
         <ScrollArea className="h-full w-full">
           {sessions.length === 0 ? (
-            <div className="text-center text-muted-foreground py-10 px-4 h-full flex flex-col justify-center items-center">
-              <MessageCircle className="mx-auto h-12 w-12 opacity-50 mb-2" />
-              <p className="text-sm">No chat sessions yet.</p>
-              <p className="text-xs">Start a new conversation to see it here.</p>
+            <div className="text-center text-muted-foreground py-10 px-4 h-full flex flex-col justify-center items-center group-data-[collapsible=icon]:hidden">
+              <MessageCircle className="mx-auto h-10 w-10 opacity-50 mb-3" />
+              <p className="text-sm font-medium">No Chats Yet</p>
+              <p className="text-xs mt-1">Click "New Chat" to start.</p>
             </div>
           ) : (
             <ul className="space-y-1">
               {sessions.map((session) => (
                 <li key={session.id}>
                   {renamingSessionId === session.id ? (
-                    <div className="flex items-center gap-2 p-2 rounded-md bg-muted">
+                    <div className="flex items-center gap-2 p-2 rounded-md bg-muted group-data-[collapsible=icon]:hidden">
                       <Input
                         type="text"
                         value={newTitle}
@@ -97,13 +100,13 @@ export function ChatSessionSidebar({
                           if (e.key === 'Enter') handleRenameSubmit(session.id);
                           if (e.key === 'Escape') handleRenameCancel();
                         }}
-                        className="h-8 flex-grow bg-background focus-visible:ring-primary"
+                        className="h-8 flex-grow bg-background focus-visible:ring-primary text-sm"
                         autoFocus
                       />
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-green-500 hover:text-green-600" onClick={() => handleRenameSubmit(session.id)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-700" onClick={() => handleRenameSubmit(session.id)}>
                         <Check className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600" onClick={handleRenameCancel}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700" onClick={handleRenameCancel}>
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
@@ -119,19 +122,19 @@ export function ChatSessionSidebar({
                         }
                       }}
                       className={cn(
-                        'w-full text-left px-3 py-2.5 rounded-md text-sm truncate flex justify-between items-center group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                        'w-full text-left px-3 py-2 rounded-md text-sm truncate flex justify-between items-center group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-sidebar-background',
                         activeSessionId === session.id
-                          ? 'bg-primary text-primary-foreground'
-                          : 'hover:bg-muted text-foreground', 
+                          ? 'bg-sidebar-primary text-sidebar-primary-foreground font-medium shadow-inner' // Active state more prominent
+                          : 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sidebar-foreground', 
+                        'group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:py-3 group-data-[collapsible=icon]:px-0' // Icon mode styling
                       )}
                       title={session.title}
                     >
                       <span className="truncate flex-grow mr-2 group-data-[collapsible=icon]:hidden">{session.title}</span>
-                       <span className="truncate flex-grow mr-2 hidden group-data-[collapsible=icon]:inline">
+                       <span className="truncate hidden group-data-[collapsible=icon]:inline text-xs font-semibold">
                         {session.title.substring(0,1).toUpperCase()}
                        </span>
-                      <div className="flex-shrink-0 space-x-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity group-data-[collapsible=icon]:opacity-100 group-data-[collapsible=icon]:group-hover:opacity-100">
-                        {/* Rename button - functionality can be added later if needed */}
+                      <div className="flex-shrink-0 space-x-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity group-data-[collapsible=icon]:hidden"> {/* Actions hidden in icon mode */}
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                              <Button
@@ -139,7 +142,7 @@ export function ChatSessionSidebar({
                               size="icon"
                               className={cn(
                                 "h-6 w-6 p-0", 
-                                activeSessionId === session.id ? "text-primary-foreground/70 hover:text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                                activeSessionId === session.id ? "text-sidebar-primary-foreground/70 hover:text-sidebar-primary-foreground" : "text-muted-foreground hover:text-destructive" // More subtle delete
                               )}
                               onClick={(e) => { e.stopPropagation(); setSessionToDelete(session.id); }}
                               aria-label="Delete session"
@@ -162,7 +165,7 @@ export function ChatSessionSidebar({
                                     onDeleteSession(session.id); 
                                     setSessionToDelete(null); 
                                   }} 
-                                  className="bg-destructive hover:bg-destructive/90"
+                                  className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                                 >
                                   Delete Session
                                 </AlertDialogAction>
@@ -179,8 +182,8 @@ export function ChatSessionSidebar({
           )}
         </ScrollArea>
       </SidebarContent>
-      <SidebarFooter className="p-2 border-t border-sidebar-border text-center text-xs text-muted-foreground shrink-0 group-data-[collapsible=icon]:hidden">
-        <p>&copy; {new Date().getFullYear()} ትውውቅ (Tewuwuq)</p>
+      <SidebarFooter className="p-3 border-t border-sidebar-border text-center text-xs text-muted-foreground shrink-0 group-data-[collapsible=icon]:hidden">
+        <p>&copy; {new Date().getFullYear()} ትውውቅ</p> {/* Simplified footer */}
       </SidebarFooter>
     </>
   );

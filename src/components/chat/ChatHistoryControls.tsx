@@ -2,7 +2,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Eraser, SearchCheck } from 'lucide-react';
+import { Eraser, SearchCheck, Trash2 } from 'lucide-react'; // Changed Eraser to Trash2
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +29,7 @@ import { useChat } from '@/hooks/useChat';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface ChatHistoryControlsProps {
-  onClearHistory: () => void;
+  onClearHistory: () => void; // This will now trigger session deletion
   activeSessionId: string | null;
 }
 
@@ -47,16 +47,19 @@ export function ChatHistoryControls({ onClearHistory, activeSessionId }: ChatHis
 
   const renderTextWithFormatting = (text: string | null) => {
     if (!text) return null;
-    const parts = text.split(/(\*\*.*?\*\*|\n)/g).filter(part => part.length > 0);
-    return parts.map((part, index) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={index}>{part.substring(2, part.length - 2)}</strong>;
-      }
-      if (part === '\n') {
-        return <br key={index} />;
-      }
-      return <span key={index}>{part}</span>;
-    });
+    // Improved Markdown-like rendering for bold and newlines
+    return text.split(/(\n)/g).map((line, lineIndex) => (
+      <React.Fragment key={lineIndex}>
+        {line === '\n' 
+          ? <br /> 
+          : line.split(/(\*\*.*?\*\*)/g).map((part, partIndex) => {
+              if (part.startsWith('**') && part.endsWith('**')) {
+                return <strong key={partIndex}>{part.substring(2, part.length - 2)}</strong>;
+              }
+              return <span key={partIndex}>{part}</span>;
+            })}
+      </React.Fragment>
+    ));
   };
 
   return (
@@ -68,7 +71,6 @@ export function ChatHistoryControls({ onClearHistory, activeSessionId }: ChatHis
             size="sm"
             className="text-muted-foreground hover:text-foreground px-2 sm:px-3"
             onClick={() => {
-              // setAnalysisOpen(true); // Managed by Dialog's onOpenChange
               handleAnalyzeSession(); 
             }}
             disabled={!activeSessionId || isAnalyzingSession}
@@ -78,16 +80,16 @@ export function ChatHistoryControls({ onClearHistory, activeSessionId }: ChatHis
             <span className="sm:hidden">Analyze</span>
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col p-6">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col p-4 md:p-6">
+          <DialogHeader className="mb-2">
             <DialogTitle>Chat Session Analysis</DialogTitle>
             <DialogDescription>
               A deep analysis of the current chat session.
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="flex-grow py-4 pr-2 min-h-[200px]">
+          <ScrollArea className="flex-grow py-2 pr-2 min-h-[200px] border rounded-md bg-muted/50">
             {isAnalyzingSession && !analysisResult && (
-              <div className="space-y-3 p-2">
+              <div className="space-y-3 p-4">
                 <Skeleton className="h-5 w-3/4" />
                 <Skeleton className="h-5 w-1/2" />
                 <Skeleton className="h-5 w-5/6" />
@@ -100,8 +102,8 @@ export function ChatHistoryControls({ onClearHistory, activeSessionId }: ChatHis
               <div className="text-sm whitespace-pre-wrap p-4">{renderTextWithFormatting(analysisResult)}</div>
             )}
             {!isAnalyzingSession && !analysisResult && (
-              <p className="text-sm text-muted-foreground p-4">
-                {activeSessionId ? "No analysis available or an error occurred during analysis." : "Please select a session to analyze."}
+              <p className="text-sm text-muted-foreground p-4 text-center">
+                {activeSessionId ? "No analysis available or an error occurred." : "Please select a session to analyze."}
               </p>
             )}
           </ScrollArea>
@@ -115,23 +117,28 @@ export function ChatHistoryControls({ onClearHistory, activeSessionId }: ChatHis
 
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2 sm:px-3">
-            <Eraser className="mr-1 sm:mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Clear Chat</span>
-            <span className="sm:hidden">Clear</span>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-muted-foreground hover:text-destructive px-2 sm:px-3"
+            disabled={!activeSessionId} // Disable if no active session
+          >
+            <Trash2 className="mr-1 sm:mr-2 h-4 w-4" /> {/* Changed icon */}
+            <span className="hidden sm:inline">Delete Session</span> {/* Changed text */}
+            <span className="sm:hidden">Delete</span> {/* Changed text */}
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Delete this chat session?</AlertDialogTitle> {/* Changed title */}
             <AlertDialogDescription>
-              This action will permanently delete the messages in the current chat session. This cannot be undone.
+              This action will permanently delete the current chat session and all its messages. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={onClearHistory} className="bg-destructive hover:bg-destructive/90">
-              Clear Current Chat
+            <AlertDialogAction onClick={onClearHistory} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+              Delete Session {/* Changed action text */}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
