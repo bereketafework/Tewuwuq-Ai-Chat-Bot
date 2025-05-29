@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import type { ChatMessage } from '@/types/chat';
-import { translateAndRespondInAmharic } from '@/ai/flows/translate-and-respond-in-amharic';
+import { translateAndRespondInAmharic, type TranslateAndRespondInAmharicInput } from '@/ai/flows/translate-and-respond-in-amharic';
 import { loadChatHistory, saveChatHistory as saveHistoryToLs, clearChatHistory as clearHistoryFromLs } from '@/lib/localStorage';
 import { useToast } from '@/hooks/use-toast';
 
@@ -21,7 +22,7 @@ export function useChat() {
     saveHistoryToLs(updatedMessages);
   }, []);
 
-  const sendMessage = useCallback(async (text: string) => {
+  const sendMessage = useCallback(async (text: string, mode: TranslateAndRespondInAmharicInput['mode']) => {
     if (!text.trim()) return;
 
     const newUserMessage: ChatMessage = {
@@ -36,11 +37,17 @@ export function useChat() {
     setIsLoadingAI(true);
 
     try {
-      const aiResponse = await translateAndRespondInAmharic({ englishInput: text });
+      const aiResponse = await translateAndRespondInAmharic({ englishInput: text, mode });
+      
+      let aiMessageText = aiResponse.amharicResponse;
+      if (mode === 'medical' && aiResponse.reasoning) {
+        // The reasoning from AI should already start with "ምክንያታዊነት:"
+        aiMessageText += `\n\n---\n${aiResponse.reasoning}`;
+      }
       
       const newAiMessage: ChatMessage = {
         id: `ai-${Date.now()}`,
-        text: aiResponse.amharicResponse,
+        text: aiMessageText,
         sender: 'ai',
         timestamp: Date.now(),
       };
@@ -52,8 +59,6 @@ export function useChat() {
         description: 'Failed to get response from AI. Please try again.',
         variant: 'destructive',
       });
-      // Optionally remove the user's message or add an error message to chat
-      // For simplicity, we'll just show a toast.
     } finally {
       setIsLoadingAI(false);
     }
