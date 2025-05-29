@@ -11,7 +11,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {MessagePart, Role} from 'genkit'; // Removed defineMessage
+import {MessagePart, Role} from 'genkit'; 
 import {z} from 'genkit';
 
 // Define the structure for individual history messages
@@ -73,7 +73,9 @@ Structure your response clearly. Use Markdown for bolding titles or important ph
 It is CRUCIAL to ALWAYS explicitly state in Amharic that your information is NOT a substitute for professional medical advice and that the user MUST consult with a qualified healthcare provider for any health concerns or before making any medical decisions. This disclaimer should be part of the main Amharic response.
 The user's current query is: "{{{currentMessageText}}}"
 {{#if currentFile}}
-An accompanying file ({{currentFile.mimeType}}) is attached. Analyze its content.
+An accompanying file ({{currentFile.mimeType}}) is attached.
+Here is the file content: {{media url=currentFile.dataUri}}
+Analyze its content along with the user's message.
 {{/if}}
 Respond comprehensively in Amharic.
 Finally, provide your reasoning as a separate thought process. This reasoning should be in Amharic and start with the label "ምክንያታዊነት:" (Reasoning:). This reasoning should be part of the 'reasoning' output field.
@@ -82,7 +84,9 @@ You are a helpful AI assistant fluent in Amharic. Your knowledge should be compr
 Analyze any provided text and/or files (images, PDFs).
 The user's current query is: "{{{currentMessageText}}}"
 {{#if currentFile}}
-An accompanying file ({{currentFile.mimeType}}) is attached. Analyze its content.
+An accompanying file ({{currentFile.mimeType}}) is attached.
+Here is the file content: {{media url=currentFile.dataUri}}
+Analyze its content along with the user's message.
 {{/if}}
 Respond comprehensively and in detail in Amharic. Structure your response clearly. Use Markdown for bolding titles or important phrases (e.g., **ዋና ርዕስ:**).
 Finally, provide your reasoning or thinking process as a separate section. This reasoning should be in Amharic and start with the label "ምክንያታዊነት:" (Reasoning:). This reasoning should be part of the 'reasoning' output field.
@@ -100,7 +104,7 @@ const analyzeTextAndFileFlow = ai.defineFlow(
 
     // The 'messages' constant that was here using defineMessage was unused and causing the error. It has been removed.
     
-    // const currentUserParts: MessagePart[] = []; // This logic seems to be for an alternative approach of combining history and current message.
+    // const currentUserParts: MessagePart[] = []; 
     // if (currentMessageText) {
     //   currentUserParts.push({ text: currentMessageText });
     // }
@@ -137,3 +141,4 @@ const analyzeTextAndFileFlow = ai.defineFlow(
     return output;
   }
 );
+
