@@ -84,7 +84,7 @@ export function ChatHistoryControls({ onClearHistory, activeSessionId }: ChatHis
             <span className="sm:hidden">Analyze</span>
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col overflow-hidden p-4 md:p-6">
+        <DialogContent className="max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-3xl xl:max-w-4xl max-h-[80vh] flex flex-col overflow-hidden p-4 md:p-6">
           <DialogHeader className="mb-2">
             <DialogTitle>Chat Session Analysis</DialogTitle>
             <DialogDescription>
