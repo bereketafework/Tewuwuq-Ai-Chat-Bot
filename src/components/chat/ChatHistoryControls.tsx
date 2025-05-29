@@ -50,6 +50,7 @@ export function ChatHistoryControls({ onClearHistory, activeSessionId }: ChatHis
 
   const renderTextWithFormatting = (text: string | null) => {
     if (!text) return null;
+    // Improved regex to handle multiple lines and bolding correctly
     const parts = text.split(/(\*\*.*?\*\*|\n)/g).filter(part => part.length > 0);
     return parts.map((part, index) => {
       if (part.startsWith('**') && part.endsWith('**')) {
