@@ -91,7 +91,7 @@ export function ChatHistoryControls({ onClearHistory, activeSessionId }: ChatHis
               A deep analysis of the current chat session.
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="flex-grow min-h-[200px] border rounded-md bg-muted/50">
+          <ScrollArea className="flex-grow h-0 min-h-[200px] border rounded-md bg-muted/50">
             {isAnalyzingSession && !analysisResult && (
               <div className="space-y-3 p-4">
                 <Skeleton className="h-5 w-3/4" />
