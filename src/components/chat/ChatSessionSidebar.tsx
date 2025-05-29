@@ -107,10 +107,18 @@ export function ChatSessionSidebar({
                     </Button>
                   </div>
                 ) : (
-                  <button
+                  <div // Changed from button to div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => onSelectSession(session.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onSelectSession(session.id);
+                      }
+                    }}
                     className={cn(
-                      'w-full text-left px-3 py-2.5 rounded-md text-sm truncate flex justify-between items-center group',
+                      'w-full text-left px-3 py-2.5 rounded-md text-sm truncate flex justify-between items-center group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                       activeSessionId === session.id
                         ? 'bg-primary text-primary-foreground'
                         : 'hover:bg-muted/80 text-foreground',
@@ -135,7 +143,7 @@ export function ChatSessionSidebar({
                       */}
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                           <Button
+                           <Button // This Button is now a child of a div, which is fine.
                             variant="ghost"
                             size="icon"
                             className={cn(
@@ -173,7 +181,7 @@ export function ChatSessionSidebar({
                         )}
                       </AlertDialog>
                     </div>
-                  </button>
+                  </div>
                 )}
               </li>
             ))}
@@ -186,3 +194,4 @@ export function ChatSessionSidebar({
     </aside>
   );
 }
+
