@@ -1,10 +1,11 @@
+
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
 import type { ChatMessage } from '@/types/chat';
 import { ChatMessageItem } from './ChatMessageItem';
 import { ChatInput } from './ChatInput';
-import { ChatHistoryControls } from './ChatHistoryControls';
+// ChatHistoryControls is removed from here as it's moved to page.tsx
 import { DateSeparator } from './DateSeparator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Image from 'next/image';
@@ -26,18 +27,16 @@ interface ChatInterfaceProps {
   messages: ChatMessage[];
   isLoadingAI: boolean;
   onSendMessage: (text: string, mode: TranslateAndRespondInAmharicInput['mode']) => void;
-  onClearHistory: () => void;
-  currentSessionId: string | null; // Added
-  sessionTitle: string; // Added
+  // onClearHistory is removed as it's handled by ChatHistoryControls in page.tsx
+  currentSessionId: string | null; 
+  // sessionTitle prop is removed as it's handled by the header in page.tsx
 }
 
 export function ChatInterface({ 
   messages, 
   isLoadingAI, 
   onSendMessage, 
-  onClearHistory,
   currentSessionId,
-  sessionTitle
 }: ChatInterfaceProps) {
   const [currentMode, setCurrentMode] = useState<TranslateAndRespondInAmharicInput['mode']>('general');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -47,7 +46,7 @@ export function ChatInterface({
     if (viewportRef.current) {
       viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight, behavior: 'smooth' });
     }
-  }, [messages, currentSessionId]); // Also scroll on session change
+  }, [messages, currentSessionId]);
   
   const handleSendMessage = (text: string) => {
     onSendMessage(text, currentMode);
@@ -56,27 +55,17 @@ export function ChatInterface({
   let lastMessageDate: number | null = null;
 
   if (!currentSessionId) {
-    // This case should ideally be handled by the parent component (page.tsx)
-    // by not rendering ChatInterface or showing a "select/start chat" message.
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
-        <p className="text-lg">Please select a chat or start a new one from the sidebar.</p>
-      </div>
-    );
+    // This case is now handled by page.tsx showing a welcome message.
+    // This component shouldn't be rendered if no active session.
+    // However, as a fallback, we can return null or a minimal placeholder.
+    return null; 
   }
 
   return (
-    <div className="flex flex-col h-full max-h-full bg-background shadow-2xl rounded-lg overflow-hidden w-full border border-border">
-      <header className="p-4 border-b border-border flex justify-between items-center bg-card sticky top-0 z-10 shrink-0">
-        <div className="flex items-center gap-2 truncate">
-           <svg width="28" height="28" viewBox="0 0 100 100" className="text-primary fill-current shrink-0">
-            <path d="M50 5C25.16 5 5 25.16 5 50s20.16 45 45 45 45-20.16 45-45S74.84 5 50 5zm0 82.02c-20.44 0-37.02-16.58-37.02-37.02S29.56 12.98 50 12.98s37.02 16.58 37.02 37.02S70.44 87.02 50 87.02z"/>
-            <path d="M62.5 37.5h-25c-1.38 0-2.5 1.12-2.5 2.5v12.5c0 1.38 1.12 2.5 2.5 2.5h10v7.5l7.5-7.5h7.5c1.38 0 2.5-1.12 2.5-2.5V40c0-1.38-1.12-2.5-2.5-2.5z"/>
-           </svg>
-          <h1 className="text-lg font-semibold text-foreground truncate" title={sessionTitle}>{sessionTitle}</h1>
-        </div>
-        <ChatHistoryControls onClearHistory={onClearHistory} />
-      </header>
+    // Removed outer border and shadow as it's part of the main panel now
+    // Removed main bg-background, as parent provides it.
+    <div className="flex flex-col h-full max-h-full w-full overflow-hidden">
+      {/* Header is removed from here. It's now in page.tsx */}
 
       <ScrollArea className="flex-grow p-4" ref={scrollAreaRef}>
         <div ref={viewportRef} className="space-y-2 pb-4">
